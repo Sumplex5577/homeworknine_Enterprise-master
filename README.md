@@ -1,11 +1,11 @@
 # homeworknine_Enterprise-master
 [![Java CI with Maven](https://github.com/Sumplex5577/homeworknine_Enterprise-master/actions/workflows/maven.yml/badge.svg)](https://github.com/Sumplex5577/homeworknine_Enterprise-master/actions/workflows/maven.yml)
 
-http://localhost:9094
+http://localhost:8080
 
 ADMIN: 
 username: admin
-password: admin
+password: 0000
 
-Customer: ivan123
-password: ivan123
+Customer: lol
+password: 123
