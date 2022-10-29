@@ -11,9 +11,9 @@ import java.util.List;
 @Getter
 @Setter
 public class CartDto {
-    private Long id;
+    private Long IdCart;
     private Person person;
     private List<Product> products;
-    private Integer amountOfProducts;
     private BigDecimal sum;
+    private Long idProduct;
 }

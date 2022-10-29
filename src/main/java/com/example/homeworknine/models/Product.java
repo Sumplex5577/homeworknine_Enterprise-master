@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @Getter
@@ -14,13 +15,15 @@ import java.util.Objects;
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long idProduct;
+
+    private String name;
+
+    private BigDecimal price;
     @ManyToOne
     private Shop shop;
-    private String name;
-    private Double price;
 
-    public Product(String name, Double price) {
+    public Product(String name, BigDecimal price) {
         this.name = name;
         this.price = price;
     }
@@ -28,14 +31,13 @@ public class Product {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof Product)) return false;
         Product product = (Product) o;
-        return Objects.equals(id, product.id) && Objects.equals(shop, product.shop)
-                && Objects.equals(name, product.name) && Objects.equals(price, product.price);
+        return Objects.equals(getIdProduct(), product.getIdProduct());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, shop, name, price);
+        return Objects.hash(getIdProduct());
     }
 }

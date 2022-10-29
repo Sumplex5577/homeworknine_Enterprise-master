@@ -16,14 +16,16 @@ import java.util.List;
 public class Shop {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long idShop;
     private String name;
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private String link;
+
+    @OneToMany(cascade = CascadeType.ALL,orphanRemoval = true)
     @JsonIgnore
     private List<Product> products = new ArrayList<>();
 
-    public Shop(String name) {
+    public Shop(String name, String link) {
         this.name = name;
+        this.link = link;
     }
 }
-

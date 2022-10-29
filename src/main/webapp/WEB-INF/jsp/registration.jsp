@@ -37,12 +37,12 @@
         <form:input type="text" path="lastName" placeholder="Last Name" autofocus="true"></form:input>
     </div>
     <div>
-        <form:input type="text" path="phoneNumber" placeholder="Phone Number" autofocus="true"></form:input>
+        <form:input type="text" path="email" placeholder="Email" autofocus="true"></form:input>
     </div>
 </div>
 <button type="submit">Register</button>
 </form:form>
-<a href="/main">Main Page</a>
+<a href="/mainIndex">Main Page</a>
 </div>
 </body>
 </html>

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
 @Slf4j
-
 public class RegistrationController {
 
     private final PersonService personService;
@@ -38,13 +37,12 @@ public class RegistrationController {
             model.addAttribute("passwordError", "Wrong password");
             return "registration";
         }
-        if (personService.addPerson(personDto.getFirstName(), personDto.getLastName(), personDto.getPhoneNumber(),
-                personDto.getUsername(), personDto.getPassword()) == null) {
+        if (personService.createPerson(personDto.getFirstName(), personDto.getLastName(), personDto.getEmail(), personDto.getUsername(), personDto.getPassword()) == null) {
             model.addAttribute("usernameError", "User with this username is already exists");
             return "registration";
         }
-        log.info("New Customer was registered successfully: {}", personDto.getUsername());
-        return "redirect:/main";
+        log.info("New user is registered with username [{}] and email [{}]", personDto.getUsername(), personDto.getEmail());
+        return "redirect:/mainIndex";
     }
 
 }

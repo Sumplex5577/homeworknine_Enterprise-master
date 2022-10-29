@@ -9,12 +9,12 @@ import java.util.List;
 @Getter
 @Setter
 public class PersonDto {
-    private Long id;
+    private Long idPerson;
     private String firstName;
     private String lastName;
-    private String phoneNumber;
+    private String email;
+    private List<Cart> carts;
     private String username;
     private String password;
     private String passwordConfirm;
-    private List<Cart> carts;
 }

@@ -1,16 +1,14 @@
 package com.example.homeworknine.services;
 import com.example.homeworknine.models.Shop;
 import com.example.homeworknine.repositories.ShopRepository;
-import com.example.homeworknine.NotFoundException;
+import com.example.homeworknine.exceptions.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
 
 @Service
-@Slf4j
-public class ShopServiceImpl implements ShopService {
-
+public class ShopServiceImpl implements ShopService{
     private final ShopRepository shopRepository;
 
     public ShopServiceImpl(ShopRepository shopRepository) {
@@ -18,54 +16,31 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public void addShop(String name) {
-        shopRepository.save(new Shop(name));
+    public Shop createShop(Shop shop) {
+        return shopRepository.save(shop);
+
     }
 
     @Override
-    public void removeShopById(Long id) {
-        if (shopRepository.existsById(id)) {
-            shopRepository.deleteById(id);
+    public void deleteShop(Long idShop) throws NotFoundException {
+        if (shopRepository.existsById(idShop)) {
+            shopRepository.deleteById(idShop);
         } else {
-            try {
-                throw new NotFoundException("Shop with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Shop with ID #" + idShop + " is not found");
         }
     }
 
     @Override
-    public Shop getShopById(Long id) {
-        if (shopRepository.findById(id).isPresent()) {
-            return shopRepository.findById(id).get();
+    public Shop getShopById(Long idShop) throws NotFoundException {
+        if (shopRepository.findById(idShop).isPresent()) {
+            return shopRepository.findById(idShop).orElseThrow(() -> new NotFoundException(idShop.toString()));
         } else {
-            try {
-                throw new NotFoundException("Shop with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Shop with ID #" + idShop + " is not found");
         }
     }
 
     @Override
     public List<Shop> getAllShops() {
         return (List<Shop>) shopRepository.findAll();
-    }
-
-    @Override
-    public void updateShopNameById(Long id, String name) {
-        if (shopRepository.existsById(id)) {
-            shopRepository.updateNameById(id, name);
-        } else {
-            try {
-                throw new NotFoundException("Shop with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
     }
 }

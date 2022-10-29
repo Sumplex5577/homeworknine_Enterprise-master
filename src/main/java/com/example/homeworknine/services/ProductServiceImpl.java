@@ -1,58 +1,70 @@
 package com.example.homeworknine.services;
 import com.example.homeworknine.models.Product;
 import com.example.homeworknine.repositories.ProductRepository;
-import com.example.homeworknine.NotFoundException;
+import com.example.homeworknine.exceptions.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.util.List;
 
 
 @Service
-@Slf4j
 public class ProductServiceImpl implements ProductService {
+
+
     private final ProductRepository productRepository;
     private final ShopService shopService;
 
+    @Autowired
     public ProductServiceImpl(ProductRepository productRepository, ShopService shopService) {
         this.productRepository = productRepository;
         this.shopService = shopService;
     }
 
     @Override
-    public void addProduct(String name, Double price, Long shopId) {
-        Product product = new Product(name, price);
-        product.setShop(shopService.getShopById(shopId));
-        shopService.getShopById(shopId).getProducts().add(product);
+    public Product createProduct(String name, BigDecimal price, Long idShop) throws NotFoundException {
+        Product product = new Product(name,price);
+        product.setShop(shopService.getShopById(idShop));
+        shopService.getShopById(idShop).getProducts().add(product);
         productRepository.save(product);
+        return product;
     }
 
+
     @Override
-    public void removeProductById(Long id) {
-        if (productRepository.existsById(id)) {
-            shopService.getShopById(id).getProducts().remove(getProductById(id));
-            productRepository.deleteById(id);
+    public Product updateProduct(Long idProduct,String name, BigDecimal price, Long idShop){
+        return productRepository.findById(idProduct)
+                .map(entity -> {
+                    entity.setName(name);
+                    entity.setPrice(price);
+                    try {
+                        entity.setShop(shopService.getShopById(idShop));
+                    } catch (NotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return productRepository.save(entity);
+                })
+                .orElseThrow(() -> new EntityNotFoundException("Not Found id = " + idProduct));
+    }
+    @Override
+    public void deleteProduct(Long idProduct) throws NotFoundException {
+        if (productRepository.existsById(idProduct)) {
+            shopService.getShopById((productRepository.findById(idProduct).orElseThrow(() -> new NotFoundException(idProduct.toString()))).getShop().getIdShop()).getProducts().remove(getById(idProduct));
+            productRepository.deleteById(idProduct);
         } else {
-            try {
-                throw new NotFoundException("Product with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Product with ID #" + idProduct + " is not found");
         }
     }
 
     @Override
-    public Product getProductById(Long id) {
-        if (productRepository.findById(id).isPresent()) {
-            return productRepository.findById(id).get();
+    public Product getById(Long idProduct) throws NotFoundException  {
+        if (productRepository.findById(idProduct).isPresent()) {
+            return productRepository.findById(idProduct).orElseThrow(() -> new NotFoundException(idProduct.toString()));
         } else {
-            try {
-                throw new NotFoundException("Product with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Product with ID #" + idProduct + " is not found");
         }
     }
 
@@ -61,31 +73,4 @@ public class ProductServiceImpl implements ProductService {
         return (List<Product>) productRepository.findAll();
     }
 
-    @Override
-    public void updateProductNameById(Long id, String name) {
-        if (productRepository.existsById(id)) {
-            productRepository.updateProductNameById(id, name);
-        } else {
-            try {
-                throw new NotFoundException("Product with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
-
-    @Override
-    public void updateProductPriceById(Long id, Double price) {
-        if (productRepository.existsById(id)) {
-            productRepository.updateProductSumById(id, price);
-        } else {
-            try {
-                throw new NotFoundException("Product with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
 }

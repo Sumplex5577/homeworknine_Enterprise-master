@@ -1,19 +1,19 @@
 package com.example.homeworknine.services;
 
+import com.example.homeworknine.exceptions.NotFoundException;
 import com.example.homeworknine.models.Product;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductService {
-    void addProduct(String name, Double price, Long shopId);
+    Product createProduct(String name, BigDecimal price, Long idShop)throws NotFoundException;;
 
-    void removeProductById(Long id);
+    Product updateProduct(Long idProduct,String name, BigDecimal price, Long idShop);
 
-    Product getProductById(Long id);
+    void deleteProduct(Long idProduct) throws NotFoundException;
+
+    Product getById(Long idProduct) throws NotFoundException;
 
     List<Product> getAllProducts();
-
-    void updateProductNameById(Long id, String name);
-
-    void updateProductPriceById(Long id, Double price);
 }

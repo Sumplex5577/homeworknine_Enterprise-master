@@ -8,11 +8,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ProductRepository extends CrudRepository<Product, Long> {
-    @Modifying
-    @Query("update Product set name = ?2 where id = ?1")
-    Integer updateProductNameById(Long id, String name);
-
-    @Modifying
-    @Query("update Product set price = ?2 where id = ?1")
-    Integer updateProductSumById(Long id, Double price);
 }

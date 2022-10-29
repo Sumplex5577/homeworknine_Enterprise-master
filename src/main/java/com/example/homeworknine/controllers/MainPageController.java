@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
-@RequestMapping(value = {"/index", "/main", "/", ""})
+@RequestMapping(value={"/mainIndex", "/"})
 public class MainPageController {
     @RequestMapping(method = RequestMethod.GET)
     public String mainIndex(Model model) {
-        String message = "Online shop main page";
+        String message = "Online shop start page";
         model.addAttribute("message", message);
         return "mainIndex";
     }

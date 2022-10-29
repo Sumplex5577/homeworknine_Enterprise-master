@@ -22,33 +22,32 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        String[] antMatchersForAdmin = {"/all_products", "/all_shops", "/all_carts", "/add_person", "/remove_person",
-                "/all_persons", "/add_product", "/remove_product", "/update_product_name", "/update_price", "/add_shop",
-                "/remove_shop", "/update_name", "/add_cart", "/remove_cart", "/get_cart", "/add_to_cart",
-                "/remove_from_cart", "/remove_all", "/update_first_name", "/update_last_name",
-                "/update_phone_number", "/person_carts"};
-        String[] antMatchersForCustomer = {"/all_products", "/all_shops",
-                "/add_cart", "/remove_cart", "/get_cart", "/add_to_cart", "/remove_from_cart", "/remove_all",
-                "/update_first_name", "/update_last_name", "/update_phone_number", "/person_carts"};
+        String[] antMatchersForAdmin = {"/product/all", "/shop/all", "/cart/all", "/person/create", "/person/delete",
+                "/person/all", "/product/create", "/product/delete", "/product/update", "/shop/add",
+                "/shop/delete", "/cart/create", "/cart/delete", "/cart/get", "/cart/add",
+                "/cart/remove", "/cart/clean","/cart/all"};
+        String[] antMatchersForCustomer = {"/product/all", "/shop/all",
+                "/cart/create", "/cart/delete", "/cart/get", "/cart/add", "/cart/remove", "/cart/clean",
+                "/cart/update", "/cart/all"};
         http.headers().frameOptions().disable();
         http.csrf()
                 .disable()
                 .authorizeRequests()
-                .antMatchers("/main").permitAll()
+                .antMatchers("/mainIndex").permitAll()
                 .antMatchers("/registration").permitAll()
-                .antMatchers("all_shops").permitAll()
-                .antMatchers("all_products").permitAll()
+                .antMatchers("/shop/all").permitAll()
+                .antMatchers("/product/all").permitAll()
                 .antMatchers(antMatchersForAdmin).hasRole("ADMIN")
                 .antMatchers(antMatchersForCustomer).hasAnyRole("ADMIN", "CUSTOMER")
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .defaultSuccessUrl("/main")
+                .defaultSuccessUrl("/mainIndex")
                 .permitAll()
                 .and()
                 .logout()
                 .permitAll()
-                .logoutSuccessUrl("/main");
+                .logoutSuccessUrl("/login");
     }
 
     @Autowired

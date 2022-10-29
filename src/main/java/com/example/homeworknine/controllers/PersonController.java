@@ -1,104 +1,95 @@
 package com.example.homeworknine.controllers;
 
+import com.example.homeworknine.exceptions.NotFoundException;
 import com.example.homeworknine.converters.PersonConverter;
 import com.example.homeworknine.dtos.PersonDto;
 import com.example.homeworknine.services.PersonService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 
+import static com.example.homeworknine.converters.PersonConverter.convertPersonDtoToPerson;
+import static com.example.homeworknine.converters.PersonConverter.convertPersonToPersonDto;
+
 @Controller
-@Slf4j
+@RequestMapping(path="/person")
 
 public class PersonController {
+
     private final PersonService personService;
 
-    private final HttpServletRequest httpServletRequest;
-
-
-    public PersonController(PersonService personService, HttpServletRequest httpServletRequest) {
+    public PersonController(PersonService personService) {
         this.personService = personService;
-        this.httpServletRequest = httpServletRequest;
     }
 
+    @RequestMapping(method = RequestMethod.GET)
+    public String personIndex(Model model) {
+        String message = "Person control page";
+        model.addAttribute("message", message);
+        return "/person/personIndex";
+    }
 
-    @RequestMapping(value = "/add_person", method = RequestMethod.GET)
-    public String addPersonView(Model model) {
+    @RequestMapping(value = "/create", method = RequestMethod.GET)
+    public String createPersonView(Model model) {
         model.addAttribute("person", new PersonDto());
-        return "addPerson";
+        return "/person/createPerson";
     }
 
-    @RequestMapping(value = "/add_person", method = RequestMethod.POST)
-    public String addPerson(@ModelAttribute("person") PersonDto personDto) {
-        personService.addPerson(personDto.getFirstName(), personDto.getLastName(), personDto.getPhoneNumber(),
-                personDto.getUsername(), personDto.getPassword());
-        log.info(" NEW Customer was added to the persons table: {}", personDto.getUsername());
-        return "redirect:/all_persons";
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public String createPerson(@ModelAttribute("person") PersonDto personDto) {
+        personService.createPerson(personDto.getFirstName(), personDto.getLastName(), personDto.getEmail(), personDto.getUsername(), personDto.getPassword());
+        return "/person/createPersonSuccess";
     }
 
-    @RequestMapping(value = "/remove_person", method = {RequestMethod.DELETE, RequestMethod.POST, RequestMethod.GET})
+    @RequestMapping(value = "/get", method = RequestMethod.GET)
+    public String getPersonByIdView(Model model) {
+        model.addAttribute("personById", new PersonDto());
+        return "/person/getPerson";
+    }
+
+    @RequestMapping(value = "/get", method = RequestMethod.POST)
     @Transactional
-    public String removePersonById(@RequestParam Long id) {
-        personService.removePersonById(id);
-        log.info("Customer was removed from the persons table: {}", id);
-        return "redirect:/all_persons";
+    public String getPersonById(@ModelAttribute("personById") PersonDto personDto, Model model) throws NotFoundException {
+        PersonDto personById = convertPersonToPersonDto(personService.getPersonById(personDto.getIdPerson()));
+        model.addAttribute("personById", personById);
+        return "/person/getPersonSuccess";
     }
 
-    @GetMapping("/all_persons")
+    @RequestMapping(value = "/update", method = RequestMethod.GET)
+    public String updatePersonView(Model model) {
+        model.addAttribute("person", new PersonDto());
+        return "/person/updatePerson";
+    }
+
+    @RequestMapping(value = "/update", method = {RequestMethod.PUT, RequestMethod.POST})
+    @Transactional
+    public String updatePerson(@ModelAttribute("person") PersonDto personDto) throws NotFoundException {
+        personService.updatePerson(convertPersonDtoToPerson(personDto));
+        return "/person/updatePersonSuccess";
+    }
+
+    @RequestMapping(value = "/delete", method = RequestMethod.GET)
+    public String deletePersonByIdView(Model model) {
+        model.addAttribute("person", new PersonDto());
+        return "/person/deletePerson";
+    }
+
+
+    @RequestMapping(value = "/delete", method = {RequestMethod.DELETE, RequestMethod.POST})
+    public String deletePerson(@ModelAttribute("person") PersonDto personDto) throws NotFoundException {
+        personService.deletePerson(personDto.getIdPerson());
+        return "/person/deletePersonSuccess";
+    }
+
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     public String getAllPersons(Model model) {
-        model.addAttribute("all", personService.getAllPersons().stream()
-                .map(PersonConverter::convertPersonToPersonDto).collect(Collectors.toList()));
-        return "allPersons";
-    }
-
-    @RequestMapping(value = "/update_first_name", method = RequestMethod.GET)
-    public String updatePersonFirstNameByUsernameView(Model model) {
-        model.addAttribute("person", new PersonDto());
-        return "updatePersonFirstName";
-    }
-
-    @RequestMapping(value = "/update_first_name", method = {RequestMethod.PUT, RequestMethod.POST})
-    @Transactional
-    public String updatePersonFirstNameByUsername(@ModelAttribute("person") PersonDto personDto) {
-        personService.updatePersonFirstNameByUsername(httpServletRequest.getUserPrincipal().getName(),
-                personDto.getFirstName());
-        log.info("Customers First Name was updated: {}", httpServletRequest.getUserPrincipal().getName());
-
-        return "updatePersonFirstNameSuccess";
-    }
-
-    @RequestMapping(value = "/update_last_name", method = RequestMethod.GET)
-    public String updatePersonLastNameByUsernameView(Model model) {
-        model.addAttribute("person", new PersonDto());
-        return "updatePersonLastName";
-    }
-
-    @RequestMapping(value = "/update_last_name", method = {RequestMethod.PUT, RequestMethod.POST})
-    @Transactional
-    public String updatePersonLastNameByUsername(@ModelAttribute("person") PersonDto personDto) {
-        personService.updatePersonLastNameByUsername(httpServletRequest.getUserPrincipal().getName(),
-                personDto.getLastName());
-        log.info("Customers Last Name was updated: {}", httpServletRequest.getUserPrincipal().getName());
-        return "updatePersonLastNameSuccess";
-    }
-
-    @RequestMapping(value = "/update_phone_number", method = RequestMethod.GET)
-    public String updatePersonPhoneNumberByUsernameView(Model model) {
-        model.addAttribute("person", new PersonDto());
-        return "updatePersonPhoneNumber";
-    }
-
-    @RequestMapping(value = "/update_phone_number", method = {RequestMethod.PUT, RequestMethod.POST})
-    @Transactional
-    public String updatePersonPhoneNumberByUsername(@ModelAttribute("person") PersonDto personDto) {
-        personService.updatePersonPhoneNumberByUsername(httpServletRequest.getUserPrincipal().getName(),
-                personDto.getPhoneNumber());
-        log.info("Customer Phone Number was updated: {}", httpServletRequest.getUserPrincipal().getName());
-        return "updatePersonPhoneNumberSuccess";
+        model.addAttribute("all", personService.getAllPersons().stream().map(PersonConverter::convertPersonToPersonDto).collect(Collectors.toList()));
+        return "/person/allPersons";
     }
 }
+
+
+

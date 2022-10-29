@@ -1,24 +1,20 @@
 package com.example.homeworknine.services;
 
+import com.example.homeworknine.exceptions.NotFoundException;
 import com.example.homeworknine.models.Person;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
 public interface PersonService extends UserDetailsService {
-    Person addPerson(String firstName, String lastName, String phoneNumber, String username, String password);
+    Person createPerson(String firstName, String lastName, String email, String username, String password);
 
-    void removePersonById(Long id);
+    Person getPersonById(Long idPerson) throws NotFoundException;
 
-    Person getPersonByUsername(String username);
+    Person updatePerson(Person person) throws NotFoundException;
 
-    Person getPersonById(Long id);
+    void deletePerson(Long idPerson) throws NotFoundException;
 
     List<Person> getAllPersons();
-
-    void updatePersonFirstNameByUsername(String username, String firstName);
-
-    void updatePersonLastNameByUsername(String username, String lastName);
-
-    void updatePersonPhoneNumberByUsername(String username, String phoneNumber);
+    Person getPersonByUsername(String username);
 }

@@ -4,7 +4,7 @@ import com.example.homeworknine.models.Cart;
 import com.example.homeworknine.models.Person;
 import com.example.homeworknine.models.Product;
 import com.example.homeworknine.repositories.CartRepository;
-import com.example.homeworknine.NotFoundException;
+import com.example.homeworknine.exceptions.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -15,53 +15,79 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+public class CartServiceImpl implements CartService{
 
-public class CartServiceImpl implements CartService {
-    private final CartRepository cartRepository;
     private final PersonService personService;
+    private final CartRepository cartRepository;
     private final ProductService productService;
 
-    public CartServiceImpl(CartRepository cartRepository, PersonService personService, ProductService productService) {
-        this.cartRepository = cartRepository;
+    public CartServiceImpl(PersonService personService, CartRepository cartRepository, ProductService productService) {
         this.personService = personService;
+        this.cartRepository = cartRepository;
         this.productService = productService;
     }
 
     @Override
-    public void addCartByPersonUsername(String username) {
-        Cart cart = new Cart(personService.getPersonByUsername(username));
-        personService.getPersonByUsername(username).getCarts().add(cart);
+    public Cart createCartByPersonId(Long idPerson) throws NotFoundException {
+        Cart cart = new Cart(personService.getPersonById(idPerson));
+        personService.getPersonById(idPerson).getCarts().add(cart);
+        log.debug("createCartByPersonId() - start: Person id = {}", idPerson);
         cartRepository.save(cart);
+        log.debug("createCartByPersonId() - end: Cart id = {}", cart.getIdCart());
+        return cart;
     }
 
-    @Override
-    public void removeCartById(Long id) {
-        if (cartRepository.findById(id).isPresent()) {
-            Cart cart = cartRepository.findById(id).get();
-            personService.getPersonById(cart.getPerson().getId()).getCarts().remove(cart);
-            cartRepository.deleteById(id);
-        } else {
-            try {
-                throw new NotFoundException("Cart with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
 
-                throw new IllegalArgumentException(e);
-            }
+    @Override
+    public Cart addProductByProductIdAndCartId(Long idCart, Long idProduct) throws NotFoundException {
+        Cart cart = cartRepository.findById(idCart).orElseThrow(() -> new NotFoundException(idCart.toString()));
+        Product product = productService.getById(idProduct);
+        if (cartRepository.findById(idCart).isPresent()) {
+            cart.getProducts().add(product);
+            BigDecimal sum = cart.getSum().add(productService.getById(idProduct).getPrice());
+            cart.setSum(sum);
+            log.debug("addProductByProductIdAndCartId() - start: Cart id={}, Product id = {}", idCart, idProduct);
+            cartRepository.save(cart);
+            log.debug("addProductByProductIdAndCartId() - end: Cart id={}, Product id = {}", idCart, idProduct);
+            return cart;
+        } else {
+            throw new NotFoundException("Cart with ID #" + idCart + " is not found");
         }
     }
 
     @Override
-    public Cart getCartById(Long id) {
-        if (cartRepository.findById(id).isPresent()) {
-            return cartRepository.findById(id).get();
-        } else {
-            try {
-                throw new NotFoundException("Cart with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
+    public Cart removeProductByProductIdAndCartId(Long idCart, Long idProduct) throws NotFoundException {
+        Cart cart = cartRepository.findById(idCart).orElseThrow(() -> new NotFoundException(idCart.toString()));
+        Product product = productService.getById(idProduct);
+        if (cartRepository.findById(idCart).isPresent()) {
+            log.debug("removeProductByProductIdAndCartId() - start: Cart id={}, Product id = {}", idCart, idProduct);
+            cart.getProducts().remove(product);
+            if (cart.getSum().compareTo(new BigDecimal("0.0")) != 0) {
+                BigDecimal sum = cart.getSum().subtract(productService.getById(idProduct).getPrice());
+                cart.setSum(sum);
+                cartRepository.save(cart);
+                log.debug("removeProductByProductIdAndCartId() - end: Cart id={}, Product id = {}", idCart, idProduct);
+            } else {
+                cart.setSum(BigDecimal.valueOf(0.0));
             }
+            cartRepository.save(cart);
+            return cart;
+        } else {
+            throw new NotFoundException("Cart with ID #" + idCart + " is not found");
+        }
+    }
+
+    @Override
+    public void removeAllProductsFromCartById(Long idCart)throws NotFoundException {
+        if (cartRepository.findById(idCart).isPresent()) {
+            Cart cart = cartRepository.findById(idCart).orElseThrow(() -> new NotFoundException(idCart.toString()));
+            cart.getProducts().clear();
+            cart.setSum(new BigDecimal("0.00"));
+            log.debug("removeAllProductsFromCartById() - start: Cart id={}", idCart);
+            cartRepository.save(cart);
+            log.debug("removeAllProductsFromCartById() - end: Cart id={},", idCart);
+        } else {
+            throw new NotFoundException("Cart with ID #" + idCart + " is empty");
         }
     }
 
@@ -71,100 +97,27 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public List<Cart> getAllPersonCarts(String username) {
-        Person person = personService.getPersonByUsername(username);
-        return getAllCarts().stream().filter(cart -> cart.getPerson().getUsername().equals(person.getUsername()))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void addProductByProductId(Long cartId, Long productId) {
-        if (cartRepository.findById(cartId).isPresent()) {
-            Cart cart = cartRepository.findById(cartId).get();
-            Product product = productService.getProductById(productId);
-            checkContainsProduct(cart, product);
-            cart.getProducts().add(product);
-            increaseAmountAndSum(cart, product);
+    public Cart getCartById(Long idCart) throws NotFoundException {
+        if (cartRepository.findById(idCart).isPresent()) {
+            return cartRepository.findById(idCart).orElseThrow(() -> new NotFoundException(idCart.toString()));
         } else {
-            try {
-                throw new NotFoundException("Cart with ID #" + cartId + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Cart with ID #" + idCart + " is not found");
         }
     }
 
     @Override
-    public void removeProductByProductId(Long cartId, Long productId) {
-        if (cartRepository.findById(cartId).isPresent()) {
-            Cart cart = cartRepository.findById(cartId).get();
-            Product product = productService.getProductById(productId);
-            checkNotContainsProduct(cart, product);
-            decreaseAmountAndSum(cart, product);
-            cart.getProducts().remove(product);
+    public void removeCartById(Long idCart) throws NotFoundException {
+        if (cartRepository.findById(idCart).isPresent()) {
+            Cart cart = cartRepository.findById(idCart).orElseThrow(() -> new NotFoundException(idCart.toString()));
+            removeAllProductsFromCartById(idCart);
+            personService.getPersonById(cart.getPerson().getIdPerson()).getCarts().remove(cart);
+            cartRepository.deleteById(idCart);
         } else {
-            try {
-                throw new NotFoundException("Cart with ID #" + cartId + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
+            throw new NotFoundException("Cart with ID #" + idCart + "is not found");
         }
     }
 
-    @Override
-    public void removeAllProductsById(Long id) {
-        if (cartRepository.findById(id).isPresent()) {
-            Cart cart = cartRepository.findById(id).get();
-            cart.getProducts().clear();
-            cart.setSum(new BigDecimal("0.00"));
-            cart.setAmountOfProducts(0);
-        } else {
-            try {
-                throw new NotFoundException("Cart with ID #" + id + " is not found");
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
 
-    private void checkNotContainsProduct(Cart cart, Product product) {
-        if (!cart.getProducts().contains(product)) {
-            try {
-                throw new NotFoundException("Cart don't contains product with ID #" + product.getId());
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
 
-    private void checkContainsProduct(Cart cart, Product product) {
-        if (cart.getProducts().contains(product)) {
-            try {
-                throw new NotFoundException("Cart is already contains product with ID #" + product.getId());
-            } catch (NotFoundException e) {
-                log.error(e.getMessage());
-                throw new IllegalArgumentException(e);
-            }
-        }
-    }
-
-    private void increaseAmountAndSum(Cart cart, Product product) {
-        cart.setAmountOfProducts(cart.getAmountOfProducts() + 1);
-        cart.setSum(cart.getSum().add(BigDecimal.valueOf(product.getPrice())));
-    }
-
-    private void decreaseAmountAndSum(Cart cart, Product product) {
-        if (cart.getSum().compareTo(new BigDecimal("0.00")) != 0
-                && cart.getAmountOfProducts().compareTo(0) != 0) {
-            cart.setAmountOfProducts(cart.getAmountOfProducts() - 1);
-            cart.setSum(cart.getSum().subtract(BigDecimal.valueOf(product.getPrice())));
-        } else {
-            cart.setSum(new BigDecimal("0.00"));
-            cart.setAmountOfProducts(0);
-        }
-    }
 }
+

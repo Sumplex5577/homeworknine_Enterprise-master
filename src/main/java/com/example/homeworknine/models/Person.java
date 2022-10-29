@@ -17,27 +17,22 @@ import java.util.*;
 public class Person implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long idPerson;
     private String firstName;
     private String lastName;
-    private String phoneNumber;
+    private String email;
+
     private String username;
     private String password;
+
     @Transient
     private String passwordConfirm;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Cart> carts = new ArrayList<>();
+
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Role> roles = new HashSet<>();
-
-    @Override
-    public String toString() {
-        return "Person [" +
-                "ID: " + id +
-                ", First Name: " + firstName +
-                ", Last Name: " + lastName +
-                ", Phone Number: " + phoneNumber + "]";
-    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -63,4 +58,5 @@ public class Person implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

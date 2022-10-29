@@ -1,23 +1,20 @@
 package com.example.homeworknine.services;
+import com.example.homeworknine.exceptions.NotFoundException;
 import com.example.homeworknine.models.Cart;
 import java.util.List;
 
 public interface CartService {
-    void addCartByPersonUsername(String username);
+    Cart createCartByPersonId(Long idPerson) throws NotFoundException;
 
-    void removeCartById(Long id);
+    Cart addProductByProductIdAndCartId(Long idCart, Long idProduct) throws NotFoundException;
 
-    Cart getCartById(Long id);
+    Cart removeProductByProductIdAndCartId(Long idCart, Long idProduct) throws NotFoundException;
+
+    void removeAllProductsFromCartById(Long idCart)throws NotFoundException;
 
     List<Cart> getAllCarts();
 
-    List<Cart> getAllPersonCarts(String username);
+    Cart getCartById(Long idCart) throws NotFoundException;
 
-    void addProductByProductId(Long cartId, Long productId);
-
-    void removeProductByProductId(Long cartId, Long productId);
-
-    void removeAllProductsById(Long id);
-
+    void removeCartById(Long idCart) throws NotFoundException;
 }
-

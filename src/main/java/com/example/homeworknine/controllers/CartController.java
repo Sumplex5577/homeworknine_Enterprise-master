@@ -1,107 +1,121 @@
 package com.example.homeworknine.controllers;
 
 
+import com.example.homeworknine.exceptions.NotFoundException;
 import com.example.homeworknine.converters.CartConverter;
-import com.example.homeworknine.converters.ProductConverter;
-import com.example.homeworknine.dtos.ProductDto;
+import com.example.homeworknine.dtos.CartDto;
+import com.example.homeworknine.dtos.PersonDto;
 import com.example.homeworknine.services.CartService;
-import com.example.homeworknine.services.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 
 import static com.example.homeworknine.converters.CartConverter.convertCartToCartDto;
 
-@Controller
 @Slf4j
-
+@Controller
+@RequestMapping(path="/cart")
 public class CartController {
 
     private final CartService cartService;
-    private final ProductService productService;
 
-    private final HttpServletRequest httpServletRequest;
-
-    public CartController(CartService cartService, ProductService productService, HttpServletRequest httpServletRequest) {
+    public CartController(CartService cartService) {
         this.cartService = cartService;
-        this.productService = productService;
-        this.httpServletRequest = httpServletRequest;
     }
 
-    @RequestMapping(value = "/add_cart", method = {RequestMethod.POST, RequestMethod.GET})
-    public String addCart() {
-        cartService.addCartByPersonUsername(httpServletRequest.getUserPrincipal().getName());
-        log.info("New Cart was added for the user: {}", httpServletRequest.getUserPrincipal().getName());
-        return "redirect:/person_carts";
+
+    @RequestMapping(method = RequestMethod.GET)
+    public String cartIndex(Model model) {
+        String message = "Cart control page";
+        model.addAttribute("message", message);
+        return "/cart/cartIndex";
     }
 
-    @RequestMapping(value = "/remove_cart", method = {RequestMethod.DELETE, RequestMethod.POST, RequestMethod.GET})
-    @Transactional
-    public String removeCartById(@RequestParam Long id) {
-        cartService.removeCartById(id);
-        log.info("Cart was deleted: {}", id);
-        return "redirect:/person_carts";
+    @RequestMapping(value = "/create", method = RequestMethod.GET)
+    public String createCartView(Model model){
+        model.addAttribute("person", new PersonDto());
+        model.addAttribute("cart", new CartDto());
+        return "/cart/createCart";
+    }
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public String createCart(@ModelAttribute("person") PersonDto personDto) throws NotFoundException {
+        cartService.createCartByPersonId(personDto.getIdPerson());
+        log.info("New cart for person with ID [{}] is created", personDto.getIdPerson());
+        return "/cart/createCartSuccess";
+    }
+    @RequestMapping(value = "/add", method = RequestMethod.GET)
+    public String addProductView(Model model) {
+        model.addAttribute("cart", new CartDto());
+        return "/cart/addProductToCart";
     }
 
-    @RequestMapping(value = "/get_cart", method = RequestMethod.GET)
-    public String getCartById(@RequestParam Long id, Model model) {
-        model.addAttribute("cart", convertCartToCartDto(cartService.getCartById(id)));
-        return "getCartSuccess";
+    @RequestMapping(value = "/add", method = {RequestMethod.PUT, RequestMethod.POST})
+    public String addProductByProductIdAndCartId(@ModelAttribute("cart") CartDto cartDto) throws NotFoundException {
+        cartService.addProductByProductIdAndCartId(cartDto.getIdCart(),cartDto.getIdProduct());
+        log.info("Product with ID [{}] is added to cart with ID [{}]", cartDto.getIdProduct(),cartDto.getIdCart());
+        return "/cart/addProductToCartSuccess";
     }
 
-    @GetMapping("/all_carts")
+    @RequestMapping(value = "/delete", method = RequestMethod.GET)
+    public String deleteCartView(Model model) {
+        model.addAttribute("cart", new CartDto());
+        return "/cart/deleteCart";
+    }
+
+    @RequestMapping(value = "/delete", method = {RequestMethod.DELETE, RequestMethod.POST})
+    public String deleteCart(@ModelAttribute("cart") CartDto cartDto) throws NotFoundException {
+        cartService.removeCartById(cartDto.getIdCart());
+        log.info("Cart with ID [{}] is deleted", cartDto.getIdCart());
+        return "/cart/deleteCartSuccess";
+    }
+
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     public String getAllCarts(Model model) {
         model.addAttribute("all", cartService.getAllCarts().stream()
                 .map(CartConverter::convertCartToCartDto).collect(Collectors.toList()));
-        return "allCarts";
+        return "/cart/allCarts";
     }
 
-    @GetMapping("/person_carts")
-    public String getAllPersonCarts(Model model) {
-        model.addAttribute("allPersonsCarts",
-                cartService.getAllPersonCarts(httpServletRequest.getUserPrincipal().getName())
-                        .stream().map(CartConverter::convertCartToCartDto).collect(Collectors.toList()));
-        return "allPersonsCarts";
+    @RequestMapping(value = "/get", method = RequestMethod.GET)
+    public String getCartByIdView(Model model) {
+        model.addAttribute("cartById", new CartDto());
+        return "/cart/getCart";
+    }
+    @RequestMapping(value = "/get", method = RequestMethod.POST)
+    public String getCartById(@ModelAttribute("cartById") CartDto cartDto, Model model) throws NotFoundException {
+        CartDto cartById = convertCartToCartDto(cartService.getCartById(cartDto.getIdCart()));
+        model.addAttribute("cartById", cartById);
+        log.info("Cart with ID [{}] is gotten", cartDto.getIdCart());
+        return "/cart/getCartSuccess";
     }
 
-    @RequestMapping(value = "/add_to_cart", method = RequestMethod.GET)
-    public String addProductByProductIdView(Model model) {
-        model.addAttribute("allCarts",
-                cartService.getAllPersonCarts(httpServletRequest.getUserPrincipal().getName())
-                        .stream().map(CartConverter::convertCartToCartDto).collect(Collectors.toList()));
-        model.addAttribute("allProducts", productService.getAllProducts().stream()
-                .map(ProductConverter::convertProductToProductDto).collect(Collectors.toList()));
-        model.addAttribute("product", new ProductDto());
-        return "addProductToCart";
+    @RequestMapping(value = "/remove", method = RequestMethod.GET)
+    public String removeProductByProductIdAndCartIdView(Model model) {
+        model.addAttribute("cart", new CartDto());
+        return "/cart/removeProductFromCart";
     }
 
-    @RequestMapping(value = "/add_to_cart", method = {RequestMethod.PUT, RequestMethod.POST})
-    @Transactional
-    public String addProductByProductId(@ModelAttribute("product") ProductDto productDto) {
-        cartService.addProductByProductId(productDto.getCartId(), productDto.getId());
-        log.info("Product #{}, was added to the Cart #{} ", productDto.getId(), productDto.getCartId());
-        return "redirect:/get_cart?id=" + productDto.getCartId();
+    @RequestMapping(value = "/remove", method = {RequestMethod.PUT, RequestMethod.POST})
+    public String removeProductByProductIdAndCartId(@ModelAttribute("cart") CartDto cartDto) throws NotFoundException {
+        cartService.removeProductByProductIdAndCartId(cartDto.getIdCart(),cartDto.getIdProduct());
+        log.info("Product with ID [{}] is deleted from cart with ID [{}]", cartDto.getIdProduct(),cartDto.getIdCart());
+        return "/cart/removeProductFromCartSuccess";
     }
 
-    @RequestMapping(value = "/remove_from_cart", method = {RequestMethod.PUT, RequestMethod.POST, RequestMethod.GET})
-    @Transactional
-    public String removeProductByProductId(@RequestParam Long cartId, @RequestParam Long productId) {
-        cartService.removeProductByProductId(cartId, productId);
-        log.info("Product #{}, was removed from the cart #{} ", productId, cartId);
-        return "redirect:/get_cart?id=" + cartId;
+    @RequestMapping(value = "/clean", method = RequestMethod.GET)
+    public String removeAllProductsFromCartByIdView(Model model) {
+        model.addAttribute("cart", new CartDto());
+        return "/cart/cleanCart";
     }
 
-    @RequestMapping(value = "/remove_all", method = {RequestMethod.GET, RequestMethod.PUT, RequestMethod.POST})
-    @Transactional
-    public String removeAllProductsById(@RequestParam Long id) {
-        cartService.removeAllProductsById(id);
-        log.info("Congratulations! All products were removed from the CART!! #{} ", id);
-        return "redirect:/person_carts";
+    @RequestMapping(value = "/clean", method = RequestMethod.POST)
+    public String removeAllProductsFromCartById(@ModelAttribute("cart") CartDto cartDto) throws NotFoundException {
+        cartService.removeAllProductsFromCartById(cartDto.getIdCart());
+        log.info("Cart with ID [{}] is cleaned]", cartDto.getIdCart());
+        return "/cart/cleanCartSuccess";
     }
-
 }
+
